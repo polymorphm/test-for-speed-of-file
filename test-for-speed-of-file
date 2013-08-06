@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+# -*- mode: python; coding: utf-8 -*-
+#
+# Copyright 2013 Andrej Antonov <polymorphm@gmail.com>.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+assert str is not bytes
+
+import argparse, sys, os, random, itertools, datetime
+
+DATA_PART_SIZE = 1000000
+RANDOM_PART_COUNT = 100
+WORSE_LIST_COUNT = 20
+
+def new_data_gen():
+    # create generator of random data
+    
+    first_part = bytes(DATA_PART_SIZE)
+    part_list = tuple(os.urandom(DATA_PART_SIZE) for part_i in range(RANDOM_PART_COUNT))
+    
+    def data_gen():
+        yield first_part
+        
+        while True:
+            yield random.choice(part_list)
+    
+    return data_gen()
+
+def new_zero_data_gen():
+    # create generator of zero data
+    
+    part = bytes(DATA_PART_SIZE)
+    
+    def zero_data_gen():
+        while True:
+            yield part
+    
+    return zero_data_gen()
+
+def main():
+    parser = argparse.ArgumentParser(
+            description='utility for speed measuring of file reading or writing',
+            )
+    
+    parser.add_argument(
+            '--verbose',
+            action='store_true',
+            help='show speed measuring of each iteration',
+            )
+    
+    parser.add_argument(
+            '--read-test',
+            action='store_true',
+            help='use read file test type',
+            )
+    
+    parser.add_argument(
+            '--write-test',
+            action='store_true',
+            help='use write file test type',
+            )
+    
+    parser.add_argument(
+            '--file',
+            metavar='PATH',
+            help='path to file for read/write operations',
+            )
+    
+    parser.add_argument(
+            '--size',
+            metavar='SIZE',
+            type=int,
+            help='size (in megabytes) for read/write',
+            )
+    
+    parser.add_argument(
+            '--fake',
+            action='store_true',
+            help='use fake mode: not perform any read/write operations',
+            )
+    
+    parser.add_argument(
+            '--zero',
+            action='store_true',
+            help='generate zero data instead of random data (for write operations)',
+            )
+    
+    args = parser.parse_args()
+    
+    if not args.read_test and not args.write_test:
+        print('argument error: no test type', file=sys.stderr)
+        exit(2)
+    
+    if args.read_test and args.write_test:
+        print('argument error: test type conflict', file=sys.stderr)
+        exit(2)
+    
+    if not args.file and not args.fake:
+        print('argument error: no file', file=sys.stderr)
+        exit(2)
+    
+    if (args.write_test or args.fake) and not args.size:
+        print('argument error: no size', file=sys.stderr)
+        exit(2)
+    
+    if args.write_test:
+        print('preparing data...')
+        
+        if not args.zero:
+            data_gen = new_data_gen()
+        else:
+            data_gen = new_zero_data_gen()
+        
+        print('preparing data: done')
+    else:
+        data_gen = None
+    
+    if args.fake:
+        fd = None
+    elif args.read_test:
+        fd = open(args.file, mode='rb')
+    elif args.write_test:
+        fd = open(args.file, mode='wb')
+    else:
+        assert False
+    
+    class IterCtx:
+            pass
+    
+    iter_ctx = IterCtx()
+    
+    if args.read_test:
+        def pre_iteration():
+            pass
+        
+        def iteration():
+            if args.fake:
+                return
+            
+            assert fd is not None
+            read_data = fd.read(DATA_PART_SIZE)
+            
+            if not read_data:
+                raise StopIteration
+    elif args.write_test:
+        def pre_iteration():
+            assert data_gen is not None
+            iter_ctx.data = next(data_gen)
+        
+        def iteration():
+            if args.fake:
+                return
+            
+            assert fd is not None
+            fd.write(iter_ctx.data)
+            fd.flush()
+    else:
+        assert False
+    
+    print('testing...')
+    
+    work_time_list = []
+    
+    def iteration_range(size):
+        if size is not None:
+            yield from range(size)
+        else:
+            yield from itertools.count()
+    
+    for iteration_i in iteration_range(args.size):
+        pre_iteration()
+        
+        begin_time = datetime.datetime.now()
+        try:
+            iteration()
+        except StopIteration:
+            break
+        end_time = datetime.datetime.now()
+        work_time = end_time - begin_time
+        work_time_list.append(work_time)
+        
+        if args.verbose:
+            print('[{}] done test iteration: {!r} days {!r} seconds {!r} microseconds'.format(
+                    iteration_i,
+                    work_time.days,
+                    work_time.seconds,
+                    work_time.microseconds,
+                    ))
+    
+    print('testing: done')
+    
+    worse_time_list = tuple(reversed(sorted(work_time_list)))[:WORSE_LIST_COUNT]
+    
+    print('worse result:')
+    
+    for worse_time in worse_time_list:
+        print('{!r} days {!r} seconds {!r} microseconds'.format(
+                    worse_time.days,
+                    worse_time.seconds,
+                    worse_time.microseconds,
+                    ))
+
+if __name__ == '__main__':
+    main()
