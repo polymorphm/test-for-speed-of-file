@@ -49,6 +49,45 @@ def new_zero_data_gen():
     
     return zero_data_gen()
 
+def show_result(work_time_list, n):
+    assert n >= 1
+    
+    if n == 1:
+        averaged_work_time_list = work_time_list
+    else:
+        averaged_work_time_list = []
+        work_time_list_iter = iter(work_time_list)
+        
+        while True:
+            work_time_slice = tuple(itertools.islice(work_time_list_iter, n))
+            if len(work_time_slice) < n:
+                break
+            
+            averaged_work_time = None
+            for work_time in work_time_slice:
+                if averaged_work_time is None:
+                    averaged_work_time = work_time
+                    
+                    continue
+                
+                averaged_work_time += work_time
+            
+            averaged_work_time_list.append(averaged_work_time)
+    
+    if not averaged_work_time_list:
+        return
+    
+    worse_time_per_n_list = tuple(reversed(sorted(averaged_work_time_list)))[:WORSE_LIST_COUNT]
+    
+    print('worse time per {!r}MB:'.format(n))
+    
+    for work_time in worse_time_per_n_list:
+        print('{!r} days {!r} seconds {!r} microseconds'.format(
+                    work_time.days,
+                    work_time.seconds,
+                    work_time.microseconds,
+                    ))
+
 def main():
     parser = argparse.ArgumentParser(
             description='utility for speed measuring of file reading or writing',
@@ -192,25 +231,21 @@ def main():
         work_time_list.append(work_time)
         
         if args.verbose:
-            print('[{}] done test iteration: {!r} days {!r} seconds {!r} microseconds'.format(
+            print('[{!r}] done test iteration: {!r} days {!r} seconds {!r} microseconds'.format(
                     iteration_i,
                     work_time.days,
                     work_time.seconds,
                     work_time.microseconds,
                     ))
     
+    work_time_list = tuple(work_time_list)
+    
     print('testing: done')
     
-    worse_time_list = tuple(reversed(sorted(work_time_list)))[:WORSE_LIST_COUNT]
-    
-    print('worse result:')
-    
-    for worse_time in worse_time_list:
-        print('{!r} days {!r} seconds {!r} microseconds'.format(
-                    worse_time.days,
-                    worse_time.seconds,
-                    worse_time.microseconds,
-                    ))
+    n = 1
+    while n < len(work_time_list):
+        show_result(work_time_list, n)
+        n *= 10
 
 if __name__ == '__main__':
     main()
