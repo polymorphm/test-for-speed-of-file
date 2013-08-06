@@ -21,6 +21,7 @@ assert str is not bytes
 import argparse, sys, os, random, itertools, datetime
 
 DATA_PART_SIZE = 1000000
+DATA_PART_UI_SUFFIX = 'MB'
 RANDOM_PART_COUNT = 100
 WORSE_LIST_COUNT = 20
 
@@ -79,7 +80,7 @@ def show_result(work_time_list, n):
     
     worse_time_per_n_list = tuple(reversed(sorted(averaged_work_time_list)))[:WORSE_LIST_COUNT]
     
-    print('worse time per {!r}MB:'.format(n))
+    print('worse time per {!r}{}:'.format(n, DATA_PART_UI_SUFFIX))
     
     for work_time in worse_time_per_n_list:
         print('{!r} days {!r} seconds {!r} microseconds'.format(
