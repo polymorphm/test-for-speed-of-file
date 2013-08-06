@@ -151,7 +151,7 @@ def main():
         print('argument error: no file', file=sys.stderr)
         exit(2)
     
-    if (args.write_test or args.fake) and not args.size:
+    if (args.write_test or args.fake) and (not args.size or args.size < 0):
         print('argument error: no size', file=sys.stderr)
         exit(2)
     
