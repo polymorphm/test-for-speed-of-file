@@ -7,7 +7,7 @@ file reading or writing.
 Status
 ------
 
-Version (this branch) for developer.
+Beta release (version 0.2).
 
 Usage Example
 -------------
