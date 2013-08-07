@@ -250,6 +250,9 @@ def main():
     
     print('testing: done')
     
+    if fd is not None:
+        fd.close()
+    
     n = 1
     while n < len(work_time_list):
         show_result(work_time_list, n)
