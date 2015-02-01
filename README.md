@@ -4,10 +4,12 @@ test-for-speed-of-file
 ``test-for-speed-of-file`` is tiny utility for speed measuring of
 file reading or writing.
 
+
 Status
 ------
 
-Version (this branch) for developer.
+Developer version (git master branch).
+
 
 Usage Example
 -------------
