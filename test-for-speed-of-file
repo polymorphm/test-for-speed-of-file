@@ -196,8 +196,8 @@ def main():
         def pre_iteration():
             pass
         
-        def iteration():
-            if args.fake:
+        def iteration(_use_fake=args.fake):
+            if _use_fake:
                 return
             
             assert fd is not None
@@ -210,13 +210,13 @@ def main():
             assert data_gen is not None
             iter_ctx.data = next(data_gen)
         
-        def iteration():
-            if args.fake:
+        def iteration(_use_fake=args.fake, _use_not_flush=args.not_flush):
+            if _use_fake:
                 return
             
             assert fd is not None
             fd.write(iter_ctx.data)
-            if not args.not_flush:
+            if not _use_not_flush:
                 fd.flush()
     else:
         assert False
