@@ -234,7 +234,7 @@ def main():
     for iteration_i in iteration_range(args.size):
         pre_iteration()
         
-        begin_time = datetime.datetime.now()
+        begin_time = end_time if iteration_i > 1 else datetime.datetime.now()
         try:
             iteration()
         except StopIteration:
