@@ -8,7 +8,7 @@ file reading or writing.
 Status
 ------
 
-Developer version (git master branch).
+Release: test-for-speed-of-file-0.3.1 .
 
 
 Usage Example
